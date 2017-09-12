@@ -1,10 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pysco68.Owin.Authentication.Ntlm", "Pysco68.Owin.Authentication.Ntlm\Pysco68.Owin.Authentication.Ntlm.csproj", "{A4FC00D0-C098-4759-836B-6B6AAD7A8895}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pysco68.Owin.Authentication.Ntlm.Tests", "Pysco68.Owin.Authentication.Ntlm.Tests\Pysco68.Owin.Authentication.Ntlm.Tests.csproj", "{069BDBD9-9BED-4944-85BC-697E1B2DFA00}"
-EndProject
+# Visual Studio 15
+VisualStudioVersion = 15.0.26730.12
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{2B113C6C-7199-415D-83CC-DCCF40344BB6}"
 	ProjectSection(SolutionItems) = preProject
 		.nuget\packages.config = .nuget\packages.config
@@ -15,22 +13,29 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		..\README.md = ..\README.md
 	EndProjectSection
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pysco68.Owin.Authentication.Ntlm", "Pysco68.Owin.Authentication.Ntlm\Pysco68.Owin.Authentication.Ntlm.csproj", "{8A23FE9A-D671-47FF-B5D6-F33634603DA7}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Pysco68.Owin.Authentication.Ntlm.Tests", "Pysco68.Owin.Authentication.Ntlm.Tests\Pysco68.Owin.Authentication.Ntlm.Tests.csproj", "{A8DCB763-B0EE-4154-AEC9-A66CD274E8E5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{A4FC00D0-C098-4759-836B-6B6AAD7A8895}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A4FC00D0-C098-4759-836B-6B6AAD7A8895}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A4FC00D0-C098-4759-836B-6B6AAD7A8895}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A4FC00D0-C098-4759-836B-6B6AAD7A8895}.Release|Any CPU.Build.0 = Release|Any CPU
-		{069BDBD9-9BED-4944-85BC-697E1B2DFA00}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{069BDBD9-9BED-4944-85BC-697E1B2DFA00}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{069BDBD9-9BED-4944-85BC-697E1B2DFA00}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{069BDBD9-9BED-4944-85BC-697E1B2DFA00}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8A23FE9A-D671-47FF-B5D6-F33634603DA7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A23FE9A-D671-47FF-B5D6-F33634603DA7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A23FE9A-D671-47FF-B5D6-F33634603DA7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A23FE9A-D671-47FF-B5D6-F33634603DA7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A8DCB763-B0EE-4154-AEC9-A66CD274E8E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A8DCB763-B0EE-4154-AEC9-A66CD274E8E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A8DCB763-B0EE-4154-AEC9-A66CD274E8E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A8DCB763-B0EE-4154-AEC9-A66CD274E8E5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {DD085752-AD57-4F2E-AB86-C4ABA9F8D193}
 	EndGlobalSection
 EndGlobal

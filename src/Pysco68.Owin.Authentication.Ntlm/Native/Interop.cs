@@ -5,10 +5,16 @@
 
     class Interop
     {
+#if NETFULL
+        private const CharSet DefaultCharSet = CharSet.Auto;
+#elif NETCORE
+        private const CharSet DefaultCharSet = CharSet.Unicode;
+#endif
+
         /// <summary>
         /// The AcquireCredentialsHandle function acquires a handle to preexisting credentials of a security principal.
         /// </summary>
-        [DllImport("secur32.dll", CharSet = CharSet.Auto, SetLastError = false)]
+        [DllImport("secur32.dll", CharSet = DefaultCharSet, SetLastError = false)]
         public static extern int AcquireCredentialsHandle(
             string pszPrincipal,
             string pszPackage,
@@ -24,7 +30,7 @@
         /// The AcceptSecurityContext (General) function enables the server component of a 
         /// transport application to establish a security context between the server and a remote client.
         /// </summary>
-        [DllImport("secur32.dll", CharSet = CharSet.Auto, SetLastError = false)]
+        [DllImport("secur32.dll", CharSet = DefaultCharSet, SetLastError = false)]
         public static extern int AcceptSecurityContext(ref SecurityHandle phCredential,
             IntPtr phContext,
             ref SecurityBufferDesciption pInput,
@@ -39,7 +45,7 @@
         /// The AcceptSecurityContext (General) function enables the server component of a 
         /// transport application to establish a security context between the server and a remote client.
         /// </summary>
-        [DllImport("secur32.dll", CharSet = CharSet.Auto, SetLastError = false)]
+        [DllImport("secur32.dll", CharSet = DefaultCharSet, SetLastError = false)]
         public static extern int AcceptSecurityContext(ref SecurityHandle phCredential,
             ref SecurityHandle phContext,
             ref SecurityBufferDesciption pInput,

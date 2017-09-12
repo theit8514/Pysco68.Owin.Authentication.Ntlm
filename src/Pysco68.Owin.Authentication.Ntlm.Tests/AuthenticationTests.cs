@@ -1,14 +1,18 @@
-﻿using Microsoft.Owin.Hosting;
-using Microsoft.Owin.Testing;
-using NUnit.Framework;
+﻿using NUnit.Framework;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
+
+#if NETFULL
+using Microsoft.Owin.Hosting;
+using Microsoft.Owin.Testing;
+#endif
+
+#if NETCORE2_0
+using System.IO;
+using Microsoft.AspNetCore.Hosting;
+#endif
 
 namespace Pysco68.Owin.Authentication.Ntlm.Tests
 {
@@ -18,17 +22,36 @@ namespace Pysco68.Owin.Authentication.Ntlm.Tests
         private IDisposable Server;
         private Uri BaseAddress;
 
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public void Init()
         {
             this.BaseAddress = new Uri("http://localhost:9999");
+#if NETFULL
             this.Server = WebApp.Start<WebApplication>(new StartOptions()
             {
                 Port = 9999
             });
+#endif
+#if NETCORE2_0
+            var host = new WebHostBuilder()
+                .UseKestrel(options =>
+                {
+                    options.Listen(IPAddress.Any, 9999);
+                })
+                .UseContentRoot(Directory.GetCurrentDirectory())
+                .UseIISIntegration()
+                .UseStartup<WebApplication>()
+                .Build();
+
+#pragma warning disable 4014
+            host.RunAsync();
+#pragma warning restore 4014
+
+            this.Server = host;
+#endif
         }
 
-        [TestFixtureTearDown]
+        [OneTimeTearDown]
         public void Teardown()
         {
             this.Server.Dispose();
@@ -36,7 +59,7 @@ namespace Pysco68.Owin.Authentication.Ntlm.Tests
 
 
         [Test]
-        public async void LogInSuccessfully()
+        public async Task LogInSuccessfully()
         {
             var handler = new HttpClientHandler 
             { 
@@ -49,7 +72,7 @@ namespace Pysco68.Owin.Authentication.Ntlm.Tests
 
 
             var response = await client.GetAsync("/api/test");
-            var result = await response.Content.ReadAsAsync<string>();
+            var result = response.Content.ReadAsString();
 
             var currentUserName = Environment.UserName;
 
@@ -58,7 +81,7 @@ namespace Pysco68.Owin.Authentication.Ntlm.Tests
         }
 
         [Test]
-        public async void LogInFail()
+        public async Task LogInFail()
         {
             var handler = new HttpClientHandler
             {
@@ -66,18 +89,23 @@ namespace Pysco68.Owin.Authentication.Ntlm.Tests
             };
 
             var client = new HttpClient(handler);
-            client.BaseAddress = this.BaseAddress;
+            var address = new UriBuilder(this.BaseAddress);
+#if NETCORE
+            // Use local machine name due to: https://github.com/dotnet/corefx/issues/5045#issuecomment-190018811
+            address.Host = Environment.MachineName;
+#endif
+            client.BaseAddress = address.Uri;
 
             var response = await client.GetAsync("/api/test");
-            var result = await response.Content.ReadAsAsync<string>();
+            var result = response.Content.ReadAsString();
 
             Assert.AreEqual(HttpStatusCode.Unauthorized, response.StatusCode, "Http status");
-            Assert.IsNullOrEmpty(result, "Username should have been null");
+            Assert.That(result, Is.Null.Or.Empty, "Username should have been null");
         }
 
 
         [Test]
-        public async void LogInFailBecauseOfFilter()
+        public async Task LogInFailBecauseOfFilter()
         {
             var handler = new HttpClientHandler
             {
@@ -91,10 +119,10 @@ namespace Pysco68.Owin.Authentication.Ntlm.Tests
                 client.BaseAddress = this.BaseAddress;
 
                 var response = await client.GetAsync("/api/test");
-                var result = await response.Content.ReadAsAsync<string>();
+                var result = response.Content.ReadAsString();
 
                 Assert.AreEqual(HttpStatusCode.Unauthorized, response.StatusCode, "Http status");
-                Assert.IsNullOrEmpty(result, "Username should have been null");
+                Assert.That(result, Is.Null.Or.Empty, "Username should have been null");
             }
             finally
             {

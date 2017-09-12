@@ -1,20 +1,35 @@
 ﻿
 namespace Pysco68.Owin.Authentication.Ntlm
 {
+#if NETFULL
     using Microsoft.Owin;
     using Microsoft.Owin.Infrastructure;
     using Microsoft.Owin.Logging;
     using Microsoft.Owin.Security;
     using Microsoft.Owin.Security.Infrastructure;
+    using Pysco68.Owin.Authentication.Ntlm.Helpers;
+#endif
     using Pysco68.Owin.Authentication.Ntlm.Security;
     using System;
     using System.Security.Claims;
     using System.Text;
     using System.Threading.Tasks;
     using System.Security.Cryptography;
+#if NETCORE2_0
+    using Microsoft.AspNetCore.Authentication;
+    using Microsoft.Extensions.Options;
+    using Microsoft.Extensions.Logging;
+    using System.Text.Encodings.Web;
+    using Microsoft.AspNetCore.WebUtilities;
+#endif
 
+#if NETFULL
     class NtlmAuthenticationHandler : AuthenticationHandler<NtlmAuthenticationOptions>
+#elif NETCORE2_0
+    class NtlmAuthenticationHandler<TOptions> : RemoteAuthenticationHandler<TOptions> where TOptions : NtlmAuthenticationOptions, new()
+#endif
     {
+#if NETFULL
         private readonly ILogger logger;
 
         /// <summary>
@@ -26,25 +41,44 @@ namespace Pysco68.Owin.Authentication.Ntlm
             this.logger = logger;
         }
 
+        public LogWrapper Logger => new LogWrapper(logger);
+#elif NETCORE2_0
         /// <summary>
-        /// Authenticate the request
+        ///     Constructor
         /// </summary>
-        /// <returns></returns>
-        protected override async Task<AuthenticationTicket> AuthenticateCoreAsync()
+        /// <param name="options"></param>
+        /// <param name="logger"></param>
+        /// <param name="encoder"></param>
+        /// <param name="clock"></param>
+        public NtlmAuthenticationHandler(IOptionsMonitor<TOptions> options, ILoggerFactory logger, UrlEncoder encoder, ISystemClock clock)
+            : base(options, logger, encoder, clock)
+        {
+        }
+#endif
+
+        protected async Task<AuthenticationTicket> AuthenticateTicketAsync()
         {
             // note: this is cheating for async...
             AuthenticationProperties properties = await Task.FromResult<AuthenticationProperties>(null);
             HandshakeState state = null;
 
             // retrieve the state Id
+#if NETFULL
             var stateId = Request.Query["state"];
+#else
+            var stateId = Request.Query["state"].ToString();
+#endif
 
 
-            if (stateId != null && this.Options.LoginStateCache.TryGet(stateId, out state))
+            if (!string.IsNullOrEmpty(stateId) && this.Options.LoginStateCache.TryGet(stateId, out state))
             {
                 // okay, we shall authenticate! For that we must
                 // get the authorization header and extract the token
+#if NETFULL
                 var authorizationHeader = Request.Headers["Authorization"];
+#else
+                var authorizationHeader = Request.Headers["Authorization"].ToString();
+#endif
 
                 byte[] token = null;
                 if (!string.IsNullOrEmpty(authorizationHeader) && authorizationHeader.StartsWith("NTLM "))
@@ -69,8 +103,14 @@ namespace Pysco68.Owin.Authentication.Ntlm
                         Response.StatusCode = 401;
 
                         // not sucessfull
+                        Logger.LogInformation("Received valid NTLM Type 1, sent NTLM Type 2");
+#if NETFULL
                         return new AuthenticationTicket(null, properties);
+#elif NETCORE2_0
+                        return null;
+#endif
                     }
+                    Logger.LogWarning("Received invalid NTLM Type 1, resending WWW-Authenticate");
                 }
                 else if (token != null && token[8] == 3)
                 {
@@ -113,9 +153,20 @@ namespace Pysco68.Owin.Authentication.Ntlm
                             Options.LoginStateCache.TryRemove(stateId);
 
                             // create the authentication ticket
+                            Logger.LogInformation("Received valid NTLM Type 3, authentication completed: " + identity.Name);
+#if NETFULL
                             return new AuthenticationTicket(identity, properties);
+#elif NETCORE2_0
+                            var principal = new ClaimsPrincipal(identity);
+                            return new AuthenticationTicket(principal, properties, SignInScheme);
+#endif
                         }
                     }
+                    Logger.LogWarning("Received invalid NTLM Type 3, resending WWW-Authenticate");
+                }
+                else
+                {
+                    Logger.LogWarning("No Authorization header received, sending WWW-Authenticate");
                 }
 
                 // This code runs under following conditions:
@@ -127,7 +178,81 @@ namespace Pysco68.Owin.Authentication.Ntlm
                 Response.StatusCode = 401;
             }
 
+#if NETFULL
             return new AuthenticationTicket(null, properties);
+#elif NETCORE2_0
+            return null;
+#endif
+        }
+
+        protected async Task<bool> HandleValidRequestAsync()
+        {
+            if (Options.CallbackPath.HasValue && Options.CallbackPath == Request.PathBase.Add(Request.Path))
+            {
+                var ticket = await AuthenticateAsync();
+#if NETFULL
+                if (ticket?.Identity != null)
+#elif NETCORE2_0
+                if (ticket?.Principal?.Identity != null && ticket.Principal.Identity.IsAuthenticated)
+#endif
+                {
+#if NETFULL
+                    Context.Authentication.SignIn(ticket.Properties, ticket.Identity);
+#elif NETCORE2_0
+                    await Context.SignInAsync(ticket.Principal.Identity.AuthenticationType, ticket.Principal, ticket.Properties);
+#endif
+                    Response.Redirect(ticket.Properties.RedirectUri);
+
+                    // Prevent further processing by the owin pipeline.
+                    return true;
+                }
+                if (Response.Headers.ContainsKey("WWW-Authenticate"))
+                {
+                    return true;
+                }
+            }
+
+            // Let the rest of the pipeline run
+            return false;
+        }
+
+        protected void HandleChallenge(AuthenticationProperties properties)
+        {
+            if (string.IsNullOrEmpty(properties.RedirectUri))
+            {
+                throw new ArgumentException("The authentication challenge's redirect URI can't be empty!");
+            }
+
+            // get a fairly "unique" string to use in the redirection URL
+            var protectedProperties = Options.StateDataFormat.Protect(properties);
+            var stateHash = CalculateMD5Hash(protectedProperties);
+
+            // create a new handshake state
+            var state = new HandshakeState()
+            {
+                AuthenticationProperties = properties
+            };
+
+            // and store it in the state cache
+            Options.LoginStateCache.Add(stateHash, state);
+
+            // redirect to trigger trigger NTLM authentication
+#if NETFULL
+            var stateUrl = WebUtilities.AddQueryString(Options.CallbackPath.Value, "state", stateHash);
+#elif NETCORE2_0
+            var stateUrl = QueryHelpers.AddQueryString(Options.CallbackPath.Value, "state", stateHash);
+#endif
+            Response.Redirect(stateUrl);
+        }
+
+#if NETFULL
+        /// <summary>
+        /// Authenticate the request
+        /// </summary>
+        /// <returns></returns>
+        protected override async Task<AuthenticationTicket> AuthenticateCoreAsync()
+        {
+            return await AuthenticateTicketAsync();
         }
 
         /// <summary>
@@ -144,28 +269,7 @@ namespace Pysco68.Owin.Authentication.Ntlm
                 // this migth be our chance to request NTLM authentication!
                 if (challenge != null)
                 {
-                    var authProperties = challenge.Properties;
-
-                    if (string.IsNullOrEmpty(authProperties.RedirectUri))
-                    {
-                        throw new ArgumentException("The authentication challenge's redirect URI can't be empty!");
-                    }
-
-                    // get a fairly "unique" string to use in the redirection URL
-                    var protectedProperties = Options.StateDataFormat.Protect(authProperties);
-                    var stateHash = CalculateMD5Hash(protectedProperties);
-
-                    // create a new handshake state
-                    var state = new HandshakeState()
-                    {
-                        AuthenticationProperties = authProperties
-                    };
-
-                    // and store it in the state cache
-                    Options.LoginStateCache.Add(stateHash, state);
-
-                    // redirect to trigger trigger NTLM authentication
-                    Response.Redirect(WebUtilities.AddQueryString(Options.CallbackPath.Value, "state", stateHash));
+                    HandleChallenge(challenge.Properties);
                 }
             }
 
@@ -179,26 +283,49 @@ namespace Pysco68.Owin.Authentication.Ntlm
         /// <returns></returns>
         public override async Task<bool> InvokeAsync()
         {
-            if (Options.CallbackPath.HasValue && Options.CallbackPath == Request.PathBase.Add(Request.Path))
-            {
-                var ticket = await AuthenticateAsync();
-                if (ticket != null && ticket.Identity != null)
-                {
-                    Context.Authentication.SignIn(ticket.Properties, ticket.Identity);
-                    Response.Redirect(ticket.Properties.RedirectUri);
+            return await HandleValidRequestAsync();
+        }
+#endif
 
-                    // Prevent further processing by the owin pipeline.
-                    return true;
-                }
-                if (Response.Headers.ContainsKey("WWW-Authenticate"))
-                {
-                    return true;
-                }
+#if NETCORE2_0
+        protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
+        {
+            var ticket = await AuthenticateTicketAsync();
+            if (ticket != null)
+            {
+                return AuthenticateResult.Success(ticket);
             }
 
-            // Let the rest of the pipeline run
-            return false;
+            return AuthenticateResult.Fail("Failed");
         }
+
+        protected override Task HandleChallengeAsync(AuthenticationProperties properties)
+        {
+            // only act on unauthorized responses
+            if (Response.StatusCode == 401 && Response.Headers.ContainsKey("WWW-Authenticate") == false)
+            {
+                HandleChallenge(properties);
+            }
+
+            return Task.Delay(0);
+        }
+
+        public override async Task<bool> HandleRequestAsync()
+        {
+            return await HandleValidRequestAsync();
+        }
+
+        protected override Task<HandleRequestResult> HandleRemoteAuthenticateAsync()
+        {
+            // Allow login to be constrained to a specific path.
+            if (Options.CallbackPath.HasValue && Options.CallbackPath == Request.PathBase.Add(Request.Path))
+            {
+                return Task.FromResult(HandleRequestResult.Handle());
+            }
+
+            return Task.FromResult(HandleRequestResult.SkipHandler());
+        }
+#endif
 
         #region Helpers
         private static readonly MD5 _md5 = MD5.Create();

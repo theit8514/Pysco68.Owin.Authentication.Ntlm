@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
     <metadata>
         <id>Pysco68.Owin.Authentication.Ntlm</id>
-        <version>1.0.5</version>
+        <version>1.0.6</version>
         <authors>Yannic "Pysco68" Staudt</authors>
         <owners>Pysco68</owners>
         <licenseUrl>https://github.com/pysco68/Pysco68.Owin.Authentication.Ntlm/raw/master/LICENCE</licenseUrl>
@@ -33,15 +33,35 @@ Initial release</releaseNotes>
         <tags>NTLM OWIN Identity Windows authentication ASP.NET</tags>
         <dependencies>
             <group targetFramework=".NETFramework4.5">
-                <dependency id="Microsoft.Owin" version="3.0.0" />
-                <dependency id="Microsoft.Owin.Security" version="3.0.0" />
-                <dependency id="Owin" version="1.0" />
+                <dependency id="Microsoft.Owin.Security" version="3.0.0" exclude="Build,Analyzers" />
+                <dependency id="Microsoft.Owin" version="3.0.0" exclude="Build,Analyzers" />
+            </group>
+            <group targetFramework=".NETCoreApp2.0">
+                <dependency id="Microsoft.AspNetCore.WebUtilities" version="2.0.0" exclude="Build,Analyzers" />
+                <dependency id="Microsoft.AspNetCore.DataProtection" version="2.0.0" exclude="Build,Analyzers" />
+                <dependency id="Microsoft.Extensions.DependencyInjection" version="2.0.0" exclude="Build,Analyzers" />
+                <dependency id="System.Text.Encodings.Web" version="4.4.0" exclude="Build,Analyzers" />
+                <dependency id="Microsoft.AspNetCore.Authentication" version="2.0.0" exclude="Build,Analyzers" />
+                <dependency id="Microsoft.Extensions.Caching.Memory" version="2.0.0" exclude="Build,Analyzers" />
+                <dependency id="Microsoft.Extensions.Logging" version="2.0.0" exclude="Build,Analyzers" />
             </group>
         </dependencies>
+        <frameworkAssemblies>
+            <frameworkAssembly assemblyName="Microsoft.CSharp" targetFramework=".NETFramework4.5" />
+            <frameworkAssembly assemblyName="mscorlib" targetFramework=".NETFramework4.5" />
+            <frameworkAssembly assemblyName="System.Configuration" targetFramework=".NETFramework4.5" />
+            <frameworkAssembly assemblyName="System.Core" targetFramework=".NETFramework4.5" />
+            <frameworkAssembly assemblyName="System.Data" targetFramework=".NETFramework4.5" />
+            <frameworkAssembly assemblyName="System" targetFramework=".NETFramework4.5" />
+            <frameworkAssembly assemblyName="System.Drawing" targetFramework=".NETFramework4.5" />
+            <frameworkAssembly assemblyName="System.Runtime.Caching" targetFramework=".NETFramework4.5" />
+            <frameworkAssembly assemblyName="System.Security" targetFramework=".NETFramework4.5" />
+            <frameworkAssembly assemblyName="System.Web" targetFramework=".NETFramework4.5" />
+            <frameworkAssembly assemblyName="System.Xml" targetFramework=".NETFramework4.5" />
+        </frameworkAssemblies>
     </metadata>
     <files>
-        <file src="bin\Release\Pysco68.Owin.Authentication.Ntlm.dll" target="lib\net45\Pysco68.Owin.Authentication.Ntlm.dll" />
-        <file src="bin\Release\Pysco68.Owin.Authentication.Ntlm.pdb" target="lib\net45\Pysco68.Owin.Authentication.Ntlm.pdb" />
-        <file src="bin\Release\Pysco68.Owin.Authentication.Ntlm.xml" target="lib\net45\Pysco68.Owin.Authentication.Ntlm.xml" />
+        <file src="C:\Users\Jack\Code\Pysco68.Owin.Authentication.Ntlm\src\Pysco68.Owin.Authentication.Ntlm\bin\Debug\netcoreapp2.0\Pysco68.Owin.Authentication.Ntlm.*" target="lib\netcoreapp2.0" />
+        <file src="C:\Users\Jack\Code\Pysco68.Owin.Authentication.Ntlm\src\Pysco68.Owin.Authentication.Ntlm\bin\Debug\net45\Pysco68.Owin.Authentication.Ntlm.*" target="lib\net45" />
     </files>
 </package>

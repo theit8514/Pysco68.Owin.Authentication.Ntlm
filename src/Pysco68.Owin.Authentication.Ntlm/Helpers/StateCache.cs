@@ -5,7 +5,11 @@
     using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
+#if NETFULL
     using System.Runtime.Caching;
+#elif NETCORE
+    using Microsoft.Extensions.Caching.Memory;
+#endif
 
     /// <summary>
     /// An in-memory cache for the login handshakes
@@ -28,7 +32,11 @@
         /// <param name="name"></param>
         public StateCache(string name)
         {
+#if NETFULL
             this.Cache = new MemoryCache(name);
+#elif NETCORE
+            this.Cache = new MemoryCache(new MemoryCacheOptions());
+#endif
             this.ExpirationTime = 2;            
         }
 
@@ -40,6 +48,7 @@
         /// <returns></returns>
         public bool TryGet(string key, out HandshakeState state)
         {
+#if NETFULL
             if (Cache.Contains(key))
             {
                 object tmp = Cache[key];
@@ -52,6 +61,9 @@
 
             state = default(HandshakeState);
             return false;
+#elif NETCORE
+            return Cache.TryGetValue(key, out state);
+#endif
         }
 
         /// <summary>
@@ -61,9 +73,14 @@
         /// <param name="state"></param>
         public void Add(string key, HandshakeState state)
         {
+#if NETFULL
             this.Cache.Set(key, state, GetCacheItemPolicy(this.ExpirationTime));
+#elif NETCORE
+            this.Cache.Set(key, state, GetMemoryCacheEntryOptions(this.ExpirationTime));
+#endif
         }
 
+#if NETFULL
         /// <summary>
         /// Add a new state to the cache and set a custom cache item policy
         /// </summary>
@@ -74,6 +91,18 @@
         {
             this.Cache.Set(key, state, policy);
         }
+#elif NETCORE
+        /// <summary>
+        /// Add a new state to the cache and set a custom cache item policy
+        /// </summary>
+        /// <param name="key"></param>
+        /// <param name="state"></param>
+        /// <param name="policy"></param>
+        public void Add(string key, HandshakeState state, MemoryCacheEntryOptions policy)
+        {
+            this.Cache.Set(key, state, policy);
+        }
+#endif
 
         /// <summary>
         /// Remove a key
@@ -82,10 +111,16 @@
         /// <returns></returns>
         public bool TryRemove(string key)
         {
+#if NETFULL
             return this.Cache.Remove(key) != null;
+#elif NETCORE
+            this.Cache.Remove(key);
+            return true;
+#endif
         }
 
         #region Helpers
+#if NETFULL
         /// <summary>
         /// Gets a cache item policy.
         /// </summary>
@@ -107,6 +142,35 @@
             };
             return policy;
         }
+#elif NETCORE
+        /// <summary>
+        /// Gets a memory cache entry options.
+        /// </summary>
+        /// <param name="minutes">Absolute expiration time in x minutes</param>
+        /// <returns></returns>
+        private MemoryCacheEntryOptions GetMemoryCacheEntryOptions(int minutes)
+        {
+            var options = new MemoryCacheEntryOptions()
+            {
+                Priority = CacheItemPriority.Normal,
+                AbsoluteExpiration = DateTimeOffset.Now.AddMinutes(minutes),
+                PostEvictionCallbacks =
+                {
+                    new PostEvictionCallbackRegistration()
+                    {
+                        EvictionCallback = (key, item, reason, state) =>
+                        {
+                            // dispose cached item at removal
+                            var asDisposable = item as IDisposable;
+                            if (asDisposable != null)
+                                asDisposable.Dispose();
+                        }
+                    }
+                }
+            };
+            return options;
+        }
+#endif
         #endregion
 
     }

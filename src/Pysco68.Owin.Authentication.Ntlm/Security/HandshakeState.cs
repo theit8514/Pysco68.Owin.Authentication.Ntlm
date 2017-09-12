@@ -3,7 +3,11 @@
     using System;
     using Pysco68.Owin.Authentication.Ntlm.Native;
     using System.Runtime.InteropServices;
+#if NETFULL
     using Microsoft.Owin.Security;
+#elif NETCORE2_0
+    using Microsoft.AspNetCore.Authentication;
+#endif
     using System.Security.Principal;
 
     /// <summary>

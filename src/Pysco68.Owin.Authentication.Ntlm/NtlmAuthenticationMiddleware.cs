@@ -1,4 +1,5 @@
-﻿namespace Pysco68.Owin.Authentication.Ntlm
+﻿#if NETFULL
+namespace Pysco68.Owin.Authentication.Ntlm
 {
     using Owin;
     using Microsoft.Owin;
@@ -41,3 +42,4 @@
         }
     } 
 }
+#endif
